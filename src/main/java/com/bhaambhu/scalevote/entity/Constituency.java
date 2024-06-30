@@ -18,4 +18,12 @@ public class Constituency {
 
     @Column(nullable = false)
     private String state;
+
+    public Constituency(String name, String state) {
+        this.name = name;
+        this.state = state;
+    }
+
+    public Constituency() {
+    }
 }

@@ -1,11 +1,9 @@
 package com.bhaambhu.scalevote.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
-@Getter
-@Setter
+@Data
 @Entity
 @Table(name = "parties")
 public class Party {
@@ -18,5 +16,14 @@ public class Party {
 
     @Column(nullable = false)
     private String symbol;
+
+    public Party(String name, String symbol) {
+        this.name = name;
+        this.symbol = symbol;
+    }
+
+    public Party() {
+    }
+
 }
 

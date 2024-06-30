@@ -22,4 +22,14 @@ public class Candidate {
     @ManyToOne
     @JoinColumn(name = "constituency_id", nullable = false)
     private Constituency constituency;
+
+    public Candidate(String name, Party party, Constituency constituency) {
+        this.name = name;
+        this.party = party;
+        this.constituency = constituency;
+    }
+
+
+    public Candidate() {
+    }
 }
