@@ -4,6 +4,9 @@ import com.bhaambhu.scalevote.entity.Vote;
 import com.bhaambhu.scalevote.entity.Candidate;
 import com.bhaambhu.scalevote.entity.Constituency;
 import com.bhaambhu.scalevote.repository.VoteRepository;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import com.bhaambhu.scalevote.repository.CandidateRepository;
 import com.bhaambhu.scalevote.repository.ConstituencyRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +20,7 @@ import java.util.stream.IntStream;
 
 @RestController
 @RequestMapping("/api/votes")
+@Tag(name = "Vote", description = "The voting API - for single and bulk voting (per constituency)")
 public class VoteController {
 
     @Autowired

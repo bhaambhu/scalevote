@@ -2,6 +2,8 @@ package com.bhaambhu.scalevote.controller;
 import com.bhaambhu.scalevote.entity.Party;
 import com.bhaambhu.scalevote.repository.PartyRepository;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,6 +12,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/parties")
+@Tag(name = "Political Parties")
 public class PartyController {
 
     @Autowired

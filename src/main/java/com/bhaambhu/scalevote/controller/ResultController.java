@@ -7,6 +7,10 @@ import com.bhaambhu.scalevote.entity.Vote;
 import com.bhaambhu.scalevote.repository.CandidateRepository;
 import com.bhaambhu.scalevote.repository.ConstituencyRepository;
 import com.bhaambhu.scalevote.repository.VoteRepository;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,6 +22,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/results")
+@Tag(name = "Election Results")
 public class ResultController {
 
     @Autowired
@@ -25,9 +30,6 @@ public class ResultController {
 
     @Autowired
     private ConstituencyRepository constituencyRepository;
-
-    @Autowired
-    private CandidateRepository candidateRepository;
 
     // Get results for a specific constituency
     @GetMapping("/constituency/{constituencyId}")
@@ -61,6 +63,7 @@ public class ResultController {
 
     // Get results for the entire state
     @GetMapping("/state/{state}")
+    @Operation(summary = "Fetch result per state")
     public List<Map<String, Object>> getStateResults(@PathVariable String state) {
         List<Constituency> constituencies = constituencyRepository.findByState(state);
 

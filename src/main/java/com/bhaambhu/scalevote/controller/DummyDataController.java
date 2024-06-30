@@ -12,11 +12,14 @@ import com.bhaambhu.scalevote.repository.CandidateRepository;
 import com.bhaambhu.scalevote.repository.ConstituencyRepository;
 import com.bhaambhu.scalevote.repository.PartyRepository;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import java.util.Arrays;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/dummy")
+@Tag(name = "Fill Dummy Data / Reset System", description = "Calling this endpoint will reset the database and fill dummy data for parties, constituencies and candidates.")
 public class DummyDataController {
 
     @Autowired

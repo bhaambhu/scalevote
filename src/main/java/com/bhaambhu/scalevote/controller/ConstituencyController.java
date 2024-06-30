@@ -6,11 +6,14 @@ import org.springframework.web.bind.annotation.*;
 import com.bhaambhu.scalevote.entity.Constituency;
 import com.bhaambhu.scalevote.repository.ConstituencyRepository;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import java.util.List;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/constituencies")
+@Tag(name = "Constituencies", description = "There can be multiple constituencies in a state, voting is done per constituency")
 public class ConstituencyController {
 
     @Autowired

@@ -6,11 +6,14 @@ import org.springframework.web.bind.annotation.*;
 import com.bhaambhu.scalevote.entity.Candidate;
 import com.bhaambhu.scalevote.repository.CandidateRepository;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import java.util.List;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/candidates")
+@Tag(name = "Candidates", description = "At every constituency, every party should have one candidate")
 public class CandidateController {
 
     @Autowired
