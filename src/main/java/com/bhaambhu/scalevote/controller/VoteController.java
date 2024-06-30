@@ -1,0 +1,91 @@
+package com.bhaambhu.scalevote.controller;
+
+import com.bhaambhu.scalevote.entity.Vote;
+import com.bhaambhu.scalevote.entity.Candidate;
+import com.bhaambhu.scalevote.entity.Constituency;
+import com.bhaambhu.scalevote.repository.VoteRepository;
+import com.bhaambhu.scalevote.repository.CandidateRepository;
+import com.bhaambhu.scalevote.repository.ConstituencyRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+@RestController
+@RequestMapping("/api/votes")
+public class VoteController {
+
+    @Autowired
+    private VoteRepository voteRepository;
+
+    @Autowired
+    private CandidateRepository candidateRepository;
+
+    @Autowired
+    private ConstituencyRepository constituencyRepository;
+
+    // Cast a single vote
+    @PostMapping("/cast")
+    public String castVote(@RequestParam String voterName, @RequestParam int age,
+            @RequestParam Long constituencyId, @RequestParam Long candidateId) {
+        Constituency constituency = constituencyRepository.findById(constituencyId)
+                .orElseThrow(() -> new RuntimeException("Constituency not found"));
+        Candidate candidate = candidateRepository.findById(candidateId)
+                .orElseThrow(() -> new RuntimeException("Candidate not found"));
+
+        if (!candidate.getConstituency().equals(constituency)) {
+            throw new RuntimeException("Candidate does not belong to the specified constituency");
+        }
+
+        Vote vote = new Vote();
+        vote.setVoterName(voterName);
+        vote.setAge(age);
+        vote.setConstituency(constituency);
+        vote.setCandidate(candidate);
+        vote.setTimestamp(LocalDateTime.now());
+
+        voteRepository.save(vote);
+
+        return "Vote cast successfully!";
+    }
+
+    // Bulk voting
+    @PostMapping("/bulk-cast")
+    public String bulkCastVotes(@RequestParam Long constituencyId, @RequestParam int numberOfVotes) {
+        Constituency constituency = constituencyRepository.findById(constituencyId)
+                .orElseThrow(() -> new RuntimeException("Constituency not found"));
+
+        List<Candidate> candidates = candidateRepository.findByConstituency(constituency);
+        Random random = new Random();
+
+        List<String> voterNames = generateIndianNames(numberOfVotes);
+
+        List<Vote> votes = IntStream.range(0, numberOfVotes).mapToObj(i -> {
+            Vote vote = new Vote();
+            vote.setVoterName(voterNames.get(i));
+            vote.setAge(18 + random.nextInt(63)); // Random age between 18 and 80
+            vote.setConstituency(constituency);
+            vote.setCandidate(candidates.get(random.nextInt(candidates.size())));
+            vote.setTimestamp(LocalDateTime.now());
+            return vote;
+        }).collect(Collectors.toList());
+
+        voteRepository.saveAll(votes);
+
+        return numberOfVotes + " votes cast successfully!";
+    }
+
+    // Generate random Indian names for voters
+    private List<String> generateIndianNames(int count) {
+        String[] firstNames = { "Amit", "Suman", "Ravi", "Geeta", "Raj", "Priya", "Nikhil", "Anita", "Karan", "Pooja" };
+        String[] lastNames = { "Kumar", "Sharma", "Patel", "Verma", "Singh", "Rao", "Gupta", "Nair", "Mehta", "Jain" };
+        Random random = new Random();
+        return IntStream.range(0, count).mapToObj(
+                i -> firstNames[random.nextInt(firstNames.length)] + " " + lastNames[random.nextInt(lastNames.length)])
+                .collect(Collectors.toList());
+    }
+}
