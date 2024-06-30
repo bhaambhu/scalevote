@@ -1,13 +1,13 @@
-package com.bhaambhu.ecs;
+package com.bhaambhu.scalevote;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class EcsApplication {
+public class ScalevoteApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(EcsApplication.class, args);
+		SpringApplication.run(ScalevoteApplication.class, args);
 	}
 
 }

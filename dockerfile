@@ -3,6 +3,6 @@ COPY . .
 RUN mvn clean package -DskipTests
 
 FROM eclipse-temurin:22-jdk-alpine
-COPY --from=build /target/ecs-0.0.1-SNAPSHOT.jar ecs.jar
+COPY --from=build /target/scalevote-0.0.1-SNAPSHOT.jar scalevote.jar
 EXPOSE 8080
-ENTRYPOINT ["java","-jar","ecs.jar"]
+ENTRYPOINT ["java","-jar","scalevote.jar"]
