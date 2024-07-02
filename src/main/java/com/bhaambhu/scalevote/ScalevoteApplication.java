@@ -9,5 +9,5 @@ public class ScalevoteApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(ScalevoteApplication.class, args);
 	}
-
+	
 }

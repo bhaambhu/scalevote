@@ -1,10 +1,12 @@
 package com.bhaambhu.scalevote.controller;
+
 import com.bhaambhu.scalevote.entity.Party;
 import com.bhaambhu.scalevote.repository.PartyRepository;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,9 +20,14 @@ public class PartyController {
     @Autowired
     private PartyRepository partyRepository;
 
+    @Autowired
+    private Environment env;
+
     // Get all parties
     @GetMapping
     public List<Party> getAllParties() {
+        String datasourceURL = env.getProperty("spring.datasource.url");
+        System.out.println(datasourceURL);
         return partyRepository.findAll();
     }
 
