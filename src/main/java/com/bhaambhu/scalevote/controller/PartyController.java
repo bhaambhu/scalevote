@@ -20,14 +20,9 @@ public class PartyController {
     @Autowired
     private PartyRepository partyRepository;
 
-    @Autowired
-    private Environment env;
-
     // Get all parties
     @GetMapping
     public List<Party> getAllParties() {
-        String datasourceURL = env.getProperty("spring.datasource.url");
-        System.out.println(datasourceURL);
         return partyRepository.findAll();
     }
 
