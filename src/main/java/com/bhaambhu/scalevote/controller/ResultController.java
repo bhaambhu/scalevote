@@ -34,8 +34,8 @@ public class ResultController {
 
         // Get results for a specific constituency
         @GetMapping("/constituency/{constituencyId}")
-        public Map<String, Object> getConstituencyResults(@PathVariable Long id) {
-                Optional<Constituency> constituencyOptional = constituencyRepository.findById(id);
+        public Map<String, Object> getConstituencyResults(@PathVariable Long constituencyId) {
+                Optional<Constituency> constituencyOptional = constituencyRepository.findById(constituencyId);
                 if (!constituencyOptional.isPresent()) {
                         throw new NoSuchElementException("Constituency not found");
                 }
@@ -89,66 +89,75 @@ public class ResultController {
                 List<Map<String, Object>> constituencyResults = new ArrayList<>();
                 Map<Party, Long> partyVotes = new HashMap<>();
                 long totalVotes = 0;
-        
+
                 for (Constituency constituency : constituencies) {
-                    List<Vote> votes = voteRepository.findByConstituency(constituency);
-                    Map<Candidate, Long> voteCountsMap = votes.stream()
-                            .collect(Collectors.groupingBy(Vote::getCandidate, Collectors.counting()));
-        
-                    List<VoteCountDTO> voteCounts = voteCountsMap.entrySet().stream()
-                            .map(entry -> new VoteCountDTO(entry.getKey().getId(), entry.getKey().getName(), entry.getValue()))
-                            .collect(Collectors.toList());
-        
-                    Map<String, Object> result = new HashMap<>();
-                    result.put("constituency", constituency.getName());
-                    result.put("totalVotes", votes.size());
-                    result.put("voteCounts", voteCounts);
-        
-                    if (!voteCountsMap.isEmpty()) {
-                        Candidate winningCandidate = Collections.max(voteCountsMap.entrySet(), Map.Entry.comparingByValue()).getKey();
-                        long winningVotes = voteCountsMap.get(winningCandidate);
-                        long margin = winningVotes - voteCountsMap.values().stream()
-                                .filter(count -> !count.equals(winningVotes))
-                                .max(Long::compareTo)
-                                .orElse(0L);
-        
-                        result.put("winningCandidate", new HashMap<String, Object>() {{
-                            put("id", winningCandidate.getId());
-                            put("name", winningCandidate.getName());
-                            put("votes", winningVotes);
-                        }});
-                        result.put("winningParty", new HashMap<String, Object>() {{
-                            put("id", winningCandidate.getParty().getId());
-                            put("name", winningCandidate.getParty().getName());
-                            put("symbol", winningCandidate.getParty().getSymbol());
-                        }});
-                        result.put("margin", margin);
-        
-                        partyVotes.put(winningCandidate.getParty(), 
-                            partyVotes.getOrDefault(winningCandidate.getParty(), 0L) + winningVotes);
-                    } else {
-                        result.put("winningCandidate", null);
-                        result.put("winningParty", null);
-                        result.put("margin", 0);
-                    }
-        
-                    totalVotes += votes.size();
-                    constituencyResults.add(result);
+                        List<Vote> votes = voteRepository.findByConstituency(constituency);
+                        Map<Candidate, Long> voteCountsMap = votes.stream()
+                                        .collect(Collectors.groupingBy(Vote::getCandidate, Collectors.counting()));
+
+                        List<VoteCountDTO> voteCounts = voteCountsMap.entrySet().stream()
+                                        .map(entry -> new VoteCountDTO(entry.getKey().getId(), entry.getKey().getName(),
+                                                        entry.getValue()))
+                                        .collect(Collectors.toList());
+
+                        Map<String, Object> result = new HashMap<>();
+                        result.put("constituency", constituency.getName());
+                        result.put("totalVotes", votes.size());
+                        result.put("voteCounts", voteCounts);
+
+                        if (!voteCountsMap.isEmpty()) {
+                                Candidate winningCandidate = Collections
+                                                .max(voteCountsMap.entrySet(), Map.Entry.comparingByValue()).getKey();
+                                long winningVotes = voteCountsMap.get(winningCandidate);
+                                long margin = winningVotes - voteCountsMap.values().stream()
+                                                .filter(count -> !count.equals(winningVotes))
+                                                .max(Long::compareTo)
+                                                .orElse(0L);
+
+                                result.put("winningCandidate", new HashMap<String, Object>() {
+                                        {
+                                                put("id", winningCandidate.getId());
+                                                put("name", winningCandidate.getName());
+                                                put("votes", winningVotes);
+                                        }
+                                });
+                                result.put("winningParty", new HashMap<String, Object>() {
+                                        {
+                                                put("id", winningCandidate.getParty().getId());
+                                                put("name", winningCandidate.getParty().getName());
+                                                put("symbol", winningCandidate.getParty().getSymbol());
+                                        }
+                                });
+                                result.put("margin", margin);
+
+                                partyVotes.put(winningCandidate.getParty(),
+                                                partyVotes.getOrDefault(winningCandidate.getParty(), 0L)
+                                                                + winningVotes);
+                        } else {
+                                result.put("winningCandidate", null);
+                                result.put("winningParty", null);
+                                result.put("margin", 0);
+                        }
+
+                        totalVotes += votes.size();
+                        constituencyResults.add(result);
                 }
-        
+
                 Party winningParty = Collections.max(partyVotes.entrySet(), Map.Entry.comparingByValue()).getKey();
                 long winningPartyVotes = partyVotes.get(winningParty);
-        
+
                 Map<String, Object> stateResult = new HashMap<>();
-                stateResult.put("winningParty", new HashMap<String, Object>() {{
-                    put("id", winningParty.getId());
-                    put("name", winningParty.getName());
-                    put("symbol", winningParty.getSymbol());
-                    put("votes", winningPartyVotes);
-                }});
+                stateResult.put("winningParty", new HashMap<String, Object>() {
+                        {
+                                put("id", winningParty.getId());
+                                put("name", winningParty.getName());
+                                put("symbol", winningParty.getSymbol());
+                                put("votes", winningPartyVotes);
+                        }
+                });
                 stateResult.put("totalVotes", totalVotes);
                 stateResult.put("constituencies", constituencyResults);
-        
+
                 return stateResult;
-            }
+        }
 }
