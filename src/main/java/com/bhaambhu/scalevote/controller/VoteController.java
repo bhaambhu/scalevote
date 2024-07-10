@@ -34,21 +34,14 @@ public class VoteController {
 
     // Cast a single vote
     @PostMapping("/cast")
-    public String castVote(@RequestParam String voterName, @RequestParam int age,
-            @RequestParam Long constituencyId, @RequestParam Long candidateId) {
-        Constituency constituency = constituencyRepository.findById(constituencyId)
-                .orElseThrow(() -> new RuntimeException("Constituency not found"));
+    public String castVote(@RequestParam String voterName, @RequestParam int age, @RequestParam Long candidateId) {
         Candidate candidate = candidateRepository.findById(candidateId)
                 .orElseThrow(() -> new RuntimeException("Candidate not found"));
-
-        if (!candidate.getConstituency().equals(constituency)) {
-            throw new RuntimeException("Candidate does not belong to the specified constituency");
-        }
 
         Vote vote = new Vote();
         vote.setVoterName(voterName);
         vote.setAge(age);
-        vote.setConstituency(constituency);
+        vote.setConstituency(candidate.getConstituency());
         vote.setCandidate(candidate);
         vote.setTimestamp(LocalDateTime.now());
 
