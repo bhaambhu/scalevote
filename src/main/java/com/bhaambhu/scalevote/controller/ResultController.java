@@ -73,36 +73,52 @@ public class ResultController {
         @Operation(summary = "Fetch result per state")
         public List<Map<String, Object>> getStateResults(@PathVariable String state) {
                 List<Constituency> constituencies = constituencyRepository.findByState(state);
+                List<Map<String, Object>> stateResults = new ArrayList<>();
 
-                return constituencies.stream().map(constituency -> {
+                for (Constituency constituency : constituencies) {
                         List<Vote> votes = voteRepository.findByConstituency(constituency);
-                        Map<Candidate, Long> voteCounts = votes.stream()
+                        Map<Candidate, Long> voteCountsMap = votes.stream()
                                         .collect(Collectors.groupingBy(Vote::getCandidate, Collectors.counting()));
 
+                        List<VoteCountDTO> voteCounts = voteCountsMap.entrySet().stream()
+                                        .map(entry -> new VoteCountDTO(entry.getKey().getId(), entry.getKey().getName(),
+                                                        entry.getValue()))
+                                        .collect(Collectors.toList());
+
+                        if (voteCountsMap.isEmpty()) {
+                                Map<String, Object> result = new HashMap<>();
+                                result.put("constituency", constituency.getName());
+                                result.put("winningParty", null);
+                                result.put("winningCandidate", null);
+                                result.put("winningVotes", 0);
+                                result.put("margin", 0);
+                                result.put("totalVotes", 0);
+                                result.put("voteCounts", voteCounts);
+                                stateResults.add(result);
+                                continue;
+                        }
+
                         Candidate winningCandidate = Collections
-                                        .max(voteCounts.entrySet(), Map.Entry.comparingByValue()).getKey();
-                        Candidate runnerUpCandidate = voteCounts.entrySet().stream()
-                                        .filter(entry -> !entry.getKey().equals(winningCandidate))
-                                        .max(Map.Entry.comparingByValue())
-                                        .map(Map.Entry::getKey)
-                                        .orElse(null);
+                                        .max(voteCountsMap.entrySet(), Map.Entry.comparingByValue()).getKey();
+                        long winningVotes = voteCountsMap.get(winningCandidate);
+                        long totalVotes = voteCountsMap.values().stream().mapToLong(Long::longValue).sum();
+                        long margin = winningVotes - voteCountsMap.values().stream()
+                                        .filter(count -> !count.equals(winningVotes))
+                                        .max(Long::compareTo)
+                                        .orElse(0L);
 
-                        long winningVotes = voteCounts.get(winningCandidate);
-                        long runnerUpVotes = runnerUpCandidate != null ? voteCounts.get(runnerUpCandidate) : 0;
-                        long margin = winningVotes - runnerUpVotes;
+                        Map<String, Object> result = new HashMap<>();
+                        result.put("constituency", constituency.getName());
+                        result.put("winningParty", winningCandidate.getParty().getName());
+                        result.put("winningCandidate", winningCandidate.getName());
+                        result.put("winningVotes", winningVotes);
+                        result.put("margin", margin);
+                        result.put("totalVotes", totalVotes);
+                        result.put("voteCounts", voteCounts);
 
-                        Map<String, Object> constituencyResult = new HashMap<>();
-                        constituencyResult.put("constituency", constituency.getName());
-                        constituencyResult.put("winningParty", winningCandidate.getParty().getName());
-                        constituencyResult.put("winningCandidate", winningCandidate.getName());
-                        constituencyResult.put("winningVotes", winningVotes);
-                        constituencyResult.put("runnerUpCandidate",
-                                        runnerUpCandidate != null ? runnerUpCandidate.getName() : "None");
-                        constituencyResult.put("runnerUpVotes", runnerUpVotes);
-                        constituencyResult.put("margin", margin);
-                        constituencyResult.put("voteCounts", voteCounts);
+                        stateResults.add(result);
+                }
 
-                        return constituencyResult;
-                }).collect(Collectors.toList());
+                return stateResults;
         }
 }
