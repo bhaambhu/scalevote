@@ -13,10 +13,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -37,7 +39,8 @@ public class ResultController {
         public Map<String, Object> getConstituencyResults(@PathVariable Long constituencyId) {
                 Optional<Constituency> constituencyOptional = constituencyRepository.findById(constituencyId);
                 if (!constituencyOptional.isPresent()) {
-                        throw new NoSuchElementException("Constituency not found");
+                        throw new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND, "Constituency not found.");
                 }
                 Constituency constituency = constituencyOptional.get();
                 List<Vote> votes = voteRepository.findByConstituency(constituency);
@@ -86,6 +89,7 @@ public class ResultController {
         @Operation(summary = "Fetch result per state")
         public Map<String, Object> getStateResults(@PathVariable String state) {
                 List<Constituency> constituencies = constituencyRepository.findByState(state);
+                System.out.println("constituencies found: " + constituencies);
                 List<Map<String, Object>> constituencyResults = new ArrayList<>();
                 Map<Party, Long> partyVotes = new HashMap<>();
                 long totalVotes = 0;
@@ -143,20 +147,24 @@ public class ResultController {
                         constituencyResults.add(result);
                 }
 
-                Party winningParty = Collections.max(partyVotes.entrySet(), Map.Entry.comparingByValue()).getKey();
-                long winningPartyVotes = partyVotes.get(winningParty);
-
                 Map<String, Object> stateResult = new HashMap<>();
-                stateResult.put("winningParty", new HashMap<String, Object>() {
-                        {
-                                put("id", winningParty.getId());
-                                put("name", winningParty.getName());
-                                put("symbol", winningParty.getSymbol());
-                                put("votes", winningPartyVotes);
-                        }
-                });
                 stateResult.put("totalVotes", totalVotes);
                 stateResult.put("constituencies", constituencyResults);
+                if (!partyVotes.isEmpty()) {
+                        Party winningParty = Collections.max(partyVotes.entrySet(), Map.Entry.comparingByValue())
+                                        .getKey();
+                        long winningPartyVotes = partyVotes.get(winningParty);
+                        stateResult.put("winningParty", new HashMap<String, Object>() {
+                                {
+                                        put("id", winningParty.getId());
+                                        put("name", winningParty.getName());
+                                        put("symbol", winningParty.getSymbol());
+                                        put("votes", winningPartyVotes);
+                                }
+                        });
+                } else {
+                        stateResult.put("winningParty", null);
+                }
 
                 return stateResult;
         }
