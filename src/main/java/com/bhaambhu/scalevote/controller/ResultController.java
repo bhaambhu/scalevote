@@ -127,7 +127,7 @@ public class ResultController {
                                         .collect(Collectors.toList());
 
                         Map<String, Object> result = new HashMap<>();
-                        result.put("constituency", constituency.getName());
+                        result.put("constituency", constituency);
                         result.put("totalVotes", votes.size());
                         result.put("voteCounts", voteCounts);
 
