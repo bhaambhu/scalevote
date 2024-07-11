@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,7 +47,7 @@ public class ResultController {
                 List<Vote> votes = voteRepository.findByConstituency(constituency);
 
                 Map<String, Object> result = new HashMap<>();
-                result.put("constituency", constituency.getName());
+                result.put("constituency", constituency);
 
                 if (!votes.isEmpty()) {
                         Map<Candidate, Long> voteCountsMap = votes.stream()
@@ -90,6 +91,19 @@ public class ResultController {
                 }
 
                 return result;
+        }
+
+        @GetMapping("/state/{state}/{constituency}")
+        @Operation(summary = "Fetch result per state")
+        public Map<String, Object> getConstituencyResults(@PathVariable String state,
+                        @PathVariable String constituency) {
+                Constituency constituencyEntity = constituencyRepository.findByStateAndName(state, constituency);
+                if (constituencyEntity == null) {
+                        throw new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND, "Constituency not found.");
+                }
+
+                return getConstituencyResults(constituencyEntity.getId());
         }
 
         // Get results for the entire state

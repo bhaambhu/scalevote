@@ -1,4 +1,5 @@
 package com.bhaambhu.scalevote.repository;
+
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,6 +10,8 @@ public interface ConstituencyRepository extends JpaRepository<Constituency, Long
     // Find constituencies by state
     List<Constituency> findByState(String state);
 
+    // Find constituency by state and name
+    Constituency findByStateAndName(String state, String name);
     // Alternatively, using a custom query:
     // @Query("SELECT c FROM Constituency c WHERE c.state = :state")
     // List<Constituency> findByState(@Param("state") String state);
