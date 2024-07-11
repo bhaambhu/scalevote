@@ -54,7 +54,7 @@ public class ResultController {
                                         .collect(Collectors.groupingBy(Vote::getCandidate, Collectors.counting()));
                         List<VoteCountDTO> voteCounts = voteCountsMap.entrySet().stream()
                                         .map(entry -> new VoteCountDTO(entry.getKey().getId(), entry.getKey().getName(),
-                                                        entry.getValue()))
+                                                        entry.getValue(), entry.getKey().getParty()))
                                         .collect(Collectors.toList());
                         Candidate winningCandidate = Collections
                                         .max(voteCountsMap.entrySet(), Map.Entry.comparingByValue())
@@ -123,7 +123,7 @@ public class ResultController {
 
                         List<VoteCountDTO> voteCounts = voteCountsMap.entrySet().stream()
                                         .map(entry -> new VoteCountDTO(entry.getKey().getId(), entry.getKey().getName(),
-                                                        entry.getValue()))
+                                                        entry.getValue(), entry.getKey().getParty()))
                                         .collect(Collectors.toList());
 
                         Map<String, Object> result = new HashMap<>();
