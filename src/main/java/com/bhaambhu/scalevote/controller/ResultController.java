@@ -85,7 +85,7 @@ public class ResultController {
                 } else {
                         result.put("margin", 0);
                         result.put("totalVotes", 0);
-                        result.put("voteCounts", 0);
+                        result.put("voteCounts", new String[0]);
                         result.put("winningCandidate", null);
                         result.put("winningParty", null);
                 }
