@@ -78,10 +78,8 @@ public class VoteController {
 
     // Generate random Indian names for voters
     private List<String> generateIndianNames(int count) {
-        String[] firstNames = { "Narendra", "Rahul", "Amit", "Sonia", "Arvind", "Mamata", "Uddhav", "Yogi", "Nitish",
-                "Shashi" };
-        String[] lastNames = { "Modi", "Gandhi", "Shah", "Gandhi", "Kejriwal", "Banerjee", "Thackeray", "Adityanath",
-                "Kumar", "Tharoor" };
+        String[] firstNames = { "Amit", "Suman", "Ravi", "Geeta", "Raj", "Priya", "Nikhil", "Anita", "Karan", "Pooja" };
+        String[] lastNames = { "Kumar", "Sharma", "Patel", "Verma", "Singh", "Rao", "Gupta", "Nair", "Mehta", "Jain" };
         Random random = new Random();
         return IntStream.range(0, count).mapToObj(
                 i -> firstNames[random.nextInt(firstNames.length)] + " " + lastNames[random.nextInt(lastNames.length)])

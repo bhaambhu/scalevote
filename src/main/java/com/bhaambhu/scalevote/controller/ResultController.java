@@ -42,7 +42,6 @@ public class ResultController {
     public Map<String, Object> getConstituencyResults(@PathVariable Long constituencyId) {
         LogWithTimeStamp tsl = new LogWithTimeStamp("Fetching results for constituency " + constituencyId,
                 1);
-        Long ts = System.currentTimeMillis();
         // Get the constituency from constituencyId
         Optional<Constituency> constituencyOptional = constituencyRepository.findById(constituencyId);
         if (!constituencyOptional.isPresent()) {
