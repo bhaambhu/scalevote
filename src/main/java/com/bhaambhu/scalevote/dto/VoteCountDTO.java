@@ -1,35 +1,22 @@
 package com.bhaambhu.scalevote.dto;
 
-import com.bhaambhu.scalevote.entity.Party;
+import com.bhaambhu.scalevote.entity.Candidate;
 
 public class VoteCountDTO {
-    private Long id;
-    private String name;
+    private Candidate candidate;
     private Long votes;
-    private Party party;
-
-    public VoteCountDTO(Long id, String name, Long votes, Party party) {
-        this.id = id;
-        this.name = name;
+    
+    public VoteCountDTO(Candidate candidate, Long votes) {
+        this.candidate = candidate;
         this.votes = votes;
-        this.party = party;
     }
 
-    // Getters and setters
-    public Long getId() {
-        return id;
+    public Candidate getCandidate() {
+        return candidate;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
+    public void setCandidate(Candidate candidate) {
+        this.candidate = candidate;
     }
 
     public Long getVotes() {
@@ -39,13 +26,4 @@ public class VoteCountDTO {
     public void setVotes(Long votes) {
         this.votes = votes;
     }
-
-    public Party getParty() {
-        return party;
-    }
-
-    public void setParty(Party party) {
-        this.party = party;
-    }
-
 }

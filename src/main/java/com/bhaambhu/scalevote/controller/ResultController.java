@@ -8,6 +8,8 @@ import com.bhaambhu.scalevote.entity.Vote;
 import com.bhaambhu.scalevote.repository.CandidateRepository;
 import com.bhaambhu.scalevote.repository.ConstituencyRepository;
 import com.bhaambhu.scalevote.repository.VoteRepository;
+import com.bhaambhu.scalevote.utils.LogWithTimeStamp;
+import com.bhaambhu.scalevote.utils.Utils;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,147 +31,179 @@ import java.util.stream.Collectors;
 @Tag(name = "Election Results")
 public class ResultController {
 
-        @Autowired
-        private VoteRepository voteRepository;
+    @Autowired
+    private VoteRepository voteRepository;
 
-        @Autowired
-        private ConstituencyRepository constituencyRepository;
+    @Autowired
+    private ConstituencyRepository constituencyRepository;
 
-        // Get results for a specific constituency
-        @GetMapping("/constituency/{constituencyId}")
-        public Map<String, Object> getConstituencyResults(@PathVariable Long constituencyId) {
-                Optional<Constituency> constituencyOptional = constituencyRepository.findById(constituencyId);
-                if (!constituencyOptional.isPresent()) {
-                        throw new ResponseStatusException(
-                                        HttpStatus.NOT_FOUND, "Constituency not found.");
+    // Get results for a specific constituency
+    @GetMapping("/constituency/{constituencyId}")
+    public Map<String, Object> getConstituencyResults(@PathVariable Long constituencyId) {
+        LogWithTimeStamp tsl = new LogWithTimeStamp("Fetching results for constituency " + constituencyId,
+                1);
+        Long ts = System.currentTimeMillis();
+        // Get the constituency from constituencyId
+        Optional<Constituency> constituencyOptional = constituencyRepository.findById(constituencyId);
+        if (!constituencyOptional.isPresent()) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Constituency not found.");
+        }
+        Constituency constituency = constituencyOptional.get();
+
+        tsl.log("Got constituency " + constituency.getName(), 1);
+
+        // Get votes of this constituency
+        // List<Vote> votes = voteRepository.findByConstituency(constituency);
+        List<Vote> votes = voteRepository.findByConstituencyId(constituencyId);
+
+        // Create a new map which will be the output result of this API endpoint
+        Map<String, Object> result = new HashMap<>();
+        result.put("constituency", constituency);
+
+        tsl.log("Got " + votes.size() + " votes", 1);
+        // If votes of this constituency are not zero
+        if (!votes.isEmpty()) {
+
+            System.out.println("\tFetching votecounts by candidates");
+            // Generate a vote count map of type <candidate, vote_count>
+            Map<Candidate, Long> voteCountsMap = votes.stream()
+                    .collect(Collectors.groupingBy(Vote::getCandidate, Collectors.counting()));
+
+            tsl.log("Got voteCountsMap", 1);
+
+            // Convert this vote-counts data into an easy to read VoteCountDTO structure
+            List<VoteCountDTO> voteCounts = voteCountsMap.entrySet().stream()
+                    .map(entry -> new VoteCountDTO(entry.getKey(),
+                            entry.getValue()))
+                    .collect(Collectors.toList());
+
+            tsl.log("Created votecountsDTO", 1);
+
+            // Sort voteCounts by votes in descending order
+            voteCounts.sort((v1, v2) -> Long.compare(v2.getVotes(), v1.getVotes()));
+
+            // Get winning candidate by getting the most value from voteCountsMap and then
+            // getting its key
+
+            // Candidate winningCandidate = Collections
+            // .max(voteCountsMap.entrySet(), Map.Entry.comparingByValue())
+            // .getKey();
+
+            tsl.log("Sorted votecounts", 1);
+
+            Candidate winningCandidate = voteCounts.get(0).getCandidate();
+
+            long winningVotes = voteCounts.get(0).getVotes();
+            long totalVotes = voteCountsMap.values().stream().mapToLong(Long::longValue).sum();
+            long margin = winningVotes;
+            if (voteCounts.size() >= 2) {
+                margin = winningVotes - voteCounts.get(1).getVotes();
+            }
+            result.put("margin", margin);
+            result.put("totalVotes", totalVotes);
+            result.put("voteCounts", voteCounts);
+            result.put("winningCandidate", new HashMap<String, Object>() {
+                {
+                    put("id", winningCandidate.getId());
+                    put("name", winningCandidate.getName());
+                    put("votes", winningVotes);
                 }
-                Constituency constituency = constituencyOptional.get();
-                List<Vote> votes = voteRepository.findByConstituency(constituency);
+            });
+            result.put("winningParty", winningCandidate.getParty());
+        } else {
+            result.put("margin", 0L);
+            result.put("totalVotes", 0L);
+            result.put("voteCounts", new String[0]);
+            result.put("winningCandidate", null);
+            result.put("winningParty", null);
+        }
+        return result;
+    }
 
-                Map<String, Object> result = new HashMap<>();
-                result.put("constituency", constituency);
-
-                if (!votes.isEmpty()) {
-                        Map<Candidate, Long> voteCountsMap = votes.stream()
-                                        .collect(Collectors.groupingBy(Vote::getCandidate, Collectors.counting()));
-                        List<VoteCountDTO> voteCounts = voteCountsMap.entrySet().stream()
-                                        .map(entry -> new VoteCountDTO(entry.getKey().getId(), entry.getKey().getName(),
-                                                        entry.getValue(), entry.getKey().getParty()))
-                                        .collect(Collectors.toList());
-                        // Sort voteCounts by votes in descending order
-                        voteCounts.sort((v1, v2) -> Long.compare(v2.getVotes(), v1.getVotes()));
-
-                        Candidate winningCandidate = Collections
-                                        .max(voteCountsMap.entrySet(), Map.Entry.comparingByValue())
-                                        .getKey();
-                        long winningVotes = voteCountsMap.get(winningCandidate);
-                        long totalVotes = voteCountsMap.values().stream().mapToLong(Long::longValue).sum();
-                        long margin = winningVotes - voteCountsMap.values().stream()
-                                        .filter(count -> !count.equals(winningVotes))
-                                        .max(Long::compareTo)
-                                        .orElse(0L);
-                        result.put("margin", margin);
-                        result.put("totalVotes", totalVotes);
-                        result.put("voteCounts", voteCounts);
-                        result.put("winningCandidate", new HashMap<String, Object>() {
-                                {
-                                        put("id", winningCandidate.getId());
-                                        put("name", winningCandidate.getName());
-                                        put("votes", winningVotes);
-                                }
-                        });
-                        result.put("winningParty", new HashMap<String, Object>() {
-                                {
-                                        put("id", winningCandidate.getParty().getId());
-                                        put("name", winningCandidate.getParty().getName());
-                                        put("symbol", winningCandidate.getParty().getSymbol());
-                                }
-                        });
-                } else {
-                        result.put("margin", 0);
-                        result.put("totalVotes", 0);
-                        result.put("voteCounts", new String[0]);
-                        result.put("winningCandidate", null);
-                        result.put("winningParty", null);
-                }
-
-                return result;
+    @GetMapping("/state/{state}/{constituency}")
+    @Operation(summary = "Fetch result per state")
+    public Map<String, Object> getConstituencyResults(@PathVariable String state,
+            @PathVariable String constituency) {
+        Constituency constituencyEntity = constituencyRepository.findByStateAndName(state, constituency);
+        if (constituencyEntity == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Constituency not found.");
         }
 
-        @GetMapping("/state/{state}/{constituency}")
-        @Operation(summary = "Fetch result per state")
-        public Map<String, Object> getConstituencyResults(@PathVariable String state,
-                        @PathVariable String constituency) {
-                Constituency constituencyEntity = constituencyRepository.findByStateAndName(state, constituency);
-                if (constituencyEntity == null) {
-                        throw new ResponseStatusException(
-                                        HttpStatus.NOT_FOUND, "Constituency not found.");
-                }
+        return getConstituencyResults(constituencyEntity.getId());
+    }
 
-                return getConstituencyResults(constituencyEntity.getId());
+    // Get results for the entire state
+    @GetMapping("/state/{state}")
+    @Operation(summary = "Fetch result per state")
+    public Map<String, Object> getStateResults(@PathVariable String state) {
+        LogWithTimeStamp tsl = new LogWithTimeStamp("Fetching results for " + state);
+        List<Constituency> constituencies = constituencyRepository.findByState(state);
+        List<Map<String, Object>> constituencyResults = new ArrayList<>();
+        Map<Party, Integer> partySeatsCount = new HashMap<>();
+        long totalVotes = 0;
+        tsl.log("Got all constituencies");
+        for (Constituency constituency : constituencies) {
+            Map<String, Object> constituencyResult = getConstituencyResults(constituency.getId());
+            constituencyResults.add(constituencyResult);
+
+            Party winningParty = (Party) constituencyResult.get("winningParty");
+
+            if (winningParty != null) {
+                // Debug code
+                Constituency cur = (Constituency) constituencyResult.get("constituency");
+                System.out.println("\t" + cur.getName() + ": " + winningParty.getName() + " Setting count to "
+                        + ((partySeatsCount.getOrDefault(winningParty, 0) + 1)));
+
+                partySeatsCount.put(winningParty, partySeatsCount.getOrDefault(winningParty, 0) + 1);
+            }
+
+            totalVotes += (Long) constituencyResult.get("totalVotes");
+            tsl.log("Done with constituency " + constituency.getName());
         }
+        tsl.log("Looped through all constituencies");
 
-        // Get results for the entire state
-        @GetMapping("/state/{state}")
-        @Operation(summary = "Fetch result per state")
-        public Map<String, Object> getStateResults(@PathVariable String state) {
-                List<Constituency> constituencies = constituencyRepository.findByState(state);
-                List<Map<String, Object>> constituencyResults = new ArrayList<>();
-                Map<Party, Integer> partySeatsCount = new HashMap<>();
-                long totalVotes = 0;
+        Party[] winningParty = new Party[1];
+        int[] maxSeats = { 0 };
+        List<Map<String, Object>> partySeatsList = new ArrayList<>();
 
-                for (Constituency constituency : constituencies) {
-                        Map<String, Object> constituencyResult = getConstituencyResults(constituency.getId());
-                        constituencyResults.add(constituencyResult);
+        for (Map.Entry<Party, Integer> entry : partySeatsCount.entrySet()) {
+            Party party = entry.getKey();
+            int seats = entry.getValue();
+            Map<String, Object> partySeat = new HashMap<>();
+            partySeat.put("party", party);
+            partySeat.put("seats", seats);
+            partySeatsList.add(partySeat);
 
-                        Map<String, Object> winningPartyMap = (Map<String, Object>) constituencyResult
-                                        .get("winningParty");
-                        if (winningPartyMap != null) {
-                                Party winningParty = new Party();
-                                winningParty.setId((Long) winningPartyMap.get("id"));
-                                winningParty.setName((String) winningPartyMap.get("name"));
-                                winningParty.setSymbol((String) winningPartyMap.get("symbol"));
-
-                                partySeatsCount.put(winningParty, partySeatsCount.getOrDefault(winningParty, 0) + 1);
-                        }
-
-                        totalVotes += (Long) constituencyResult.get("totalVotes");
-                }
-
-                Party[] winningParty = { null };
-                int maxSeats = 0;
-                List<Map<String, Object>> partySeatsList = new ArrayList<>();
-
-                for (Map.Entry<Party, Integer> entry : partySeatsCount.entrySet()) {
-                        Party party = entry.getKey();
-                        int seats = entry.getValue();
-                        Map<String, Object> partySeat = new HashMap<>();
-                        partySeat.put("party", party);
-                        partySeat.put("seats", seats);
-                        partySeatsList.add(partySeat);
-
-                        if (seats > maxSeats) {
-                                maxSeats = seats;
-                                winningParty[0] = party;
-                        }
-                }
-
-                Map<String, Object> stateResult = new HashMap<>();
-                stateResult.put("totalVotes", totalVotes);
-                stateResult.put("constituencies", constituencyResults);
-                stateResult.put("partySeats", partySeatsList);
-                if (winningParty[0] != null) {
-                        stateResult.put("winningParty", new HashMap<String, Object>() {
-                                {
-                                        put("id", winningParty[0].getId());
-                                        put("name", winningParty[0].getName());
-                                        put("symbol", winningParty[0].getSymbol());
-                                }
-                        });
-                } else {
-                        stateResult.put("winningParty", null);
-                }
-
-                return stateResult;
+            if (seats > maxSeats[0]) {
+                maxSeats[0] = seats;
+                winningParty[0] = party;
+            }
         }
+        tsl.log("Counted party seats");
+
+        // Sort partySeatsList by seats in descending order
+        partySeatsList.sort((p1, p2) -> Integer.compare((Integer) p2.get("seats"), (Integer) p1.get("seats")));
+
+        tsl.log("Sorted party seats");
+
+        Map<String, Object> stateResult = new HashMap<>();
+        stateResult.put("totalVotes", totalVotes);
+        stateResult.put("constituencies", constituencyResults);
+        stateResult.put("partySeats", partySeatsList);
+        if (winningParty[0] != null) {
+            stateResult.put("winningParty", new HashMap<String, Object>() {
+                {
+                    put("id", winningParty[0].getId());
+                    put("name", winningParty[0].getName());
+                    put("symbol", winningParty[0].getSymbol());
+                }
+            });
+        } else {
+            stateResult.put("winningParty", null);
+        }
+        tsl.log("Done with state result");
+        return stateResult;
+    }
 }

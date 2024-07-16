@@ -14,6 +14,10 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
     List<Vote> findByConstituency(Constituency constituency);
 
     // Find votes by Constituency name
+    @Query("SELECT v FROM Vote v WHERE v.constituency.id = :id")
+    List<Vote> findByConstituencyId(@Param("id") Long id);
+
+    // Find votes by Constituency name
     @Query("SELECT v FROM Vote v WHERE v.constituency.name = :name")
     List<Vote> findByConstituencyName(@Param("name") String name);
 
