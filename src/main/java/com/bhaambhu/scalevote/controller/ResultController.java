@@ -40,13 +40,11 @@ public class ResultController {
     // Get results for a specific constituency
     @GetMapping("/constituency/{constituencyId}")
     public Map<String, Object> getConstituencyResults(@PathVariable Long constituencyId) {
-        LogWithTimeStamp tsl = new LogWithTimeStamp("Fetching results for constituency " + constituencyId,
-                1);
+        LogWithTimeStamp tsl = new LogWithTimeStamp("Fetching results for constituency " + constituencyId, 1);
         // Get the constituency from constituencyId
         Optional<Constituency> constituencyOptional = constituencyRepository.findById(constituencyId);
         if (!constituencyOptional.isPresent()) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND, "Constituency not found.");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Constituency not found.");
         }
         Constituency constituency = constituencyOptional.get();
 
@@ -73,9 +71,7 @@ public class ResultController {
 
             // Convert this vote-counts data into an easy to read VoteCountDTO structure
             List<VoteCountDTO> voteCounts = voteCountsMap.entrySet().stream()
-                    .map(entry -> new VoteCountDTO(entry.getKey(),
-                            entry.getValue()))
-                    .collect(Collectors.toList());
+                    .map(entry -> new VoteCountDTO(entry.getKey(), entry.getValue())).collect(Collectors.toList());
 
             tsl.log("Created votecountsDTO", 1);
 
@@ -122,12 +118,10 @@ public class ResultController {
 
     @GetMapping("/state/{state}/{constituency}")
     @Operation(summary = "Fetch result per state")
-    public Map<String, Object> getConstituencyResults(@PathVariable String state,
-            @PathVariable String constituency) {
+    public Map<String, Object> getConstituencyResults(@PathVariable String state, @PathVariable String constituency) {
         Constituency constituencyEntity = constituencyRepository.findByStateAndName(state, constituency);
         if (constituencyEntity == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND, "Constituency not found.");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Constituency not found.");
         }
 
         return getConstituencyResults(constituencyEntity.getId());
@@ -139,27 +133,39 @@ public class ResultController {
     public Map<String, Object> getStateResults(@PathVariable String state) {
         LogWithTimeStamp tsl = new LogWithTimeStamp("Fetching results for " + state);
         List<Constituency> constituencies = constituencyRepository.findByState(state);
-        List<Map<String, Object>> constituencyResults = new ArrayList<>();
+        tsl.log("Got all constituencies");
+
+        // Use parallel stream for processing constituencies
+        List<Map<String, Object>> constituencyResults = constituencies.parallelStream().map(constituency -> {
+            try {
+                return getConstituencyResults(constituency.getId());
+            } catch (Exception e) {
+                // Log the exception and return a default value
+                tsl.log("Error processing constituency " + constituency.getId() + ": " + e.getMessage());
+                return Collections.<String, Object>emptyMap();
+            }
+        }).collect(Collectors.toList());
+
         Map<Party, Integer> partySeatsCount = new HashMap<>();
         long totalVotes = 0;
-        tsl.log("Got all constituencies");
-        for (Constituency constituency : constituencies) {
-            Map<String, Object> constituencyResult = getConstituencyResults(constituency.getId());
-            constituencyResults.add(constituencyResult);
+
+        for (Map<String, Object> constituencyResult : constituencyResults) {
+            if (constituencyResult.isEmpty()) {
+                continue;
+            }
 
             Party winningParty = (Party) constituencyResult.get("winningParty");
 
             if (winningParty != null) {
-                // Debug code
                 Constituency cur = (Constituency) constituencyResult.get("constituency");
-                System.out.println("\t" + cur.getName() + ": " + winningParty.getName() + " Setting count to "
+                System.out.println("\t" + cur.getName() + ": " + winningParty.getName() + " Setting seats count to "
                         + ((partySeatsCount.getOrDefault(winningParty, 0) + 1)));
 
                 partySeatsCount.put(winningParty, partySeatsCount.getOrDefault(winningParty, 0) + 1);
             }
 
             totalVotes += (Long) constituencyResult.get("totalVotes");
-            tsl.log("Done with constituency " + constituency.getName());
+            tsl.log("Done with constituency " + ((Constituency) constituencyResult.get("constituency")).getName());
         }
         tsl.log("Looped through all constituencies");
 
